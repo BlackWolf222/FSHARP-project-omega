@@ -1,0 +1,8 @@
+{
+  "name": "FSHARP_project_omega",
+  "version": "1.0.0",
+  "devDependencies": {
+    "esbuild": "^0.19.9",
+    "eslint": "^9.26.0"
+  }
+}

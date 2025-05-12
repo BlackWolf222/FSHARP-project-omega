@@ -1,0 +1,145 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>FSHARP_project_omega</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <link rel="stylesheet" type="text/css" href="Scripts/FSHARP-project-omega.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Don't show the not-yet-loaded templates */
+        [ws-template], [ws-children-template] { display: none; }
+    </style>
+    <script type="text/javascript" src="Scripts/FSHARP-project-omega.head.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-book-open"></i>
+                <h2>NoteKeeper</h2>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li class="active" ws-onclick="SwitchToHome">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </li>
+                    <li>
+                        <a href="#create">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>New Note</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#edit">
+                            <i class="fas fa-edit"></i>
+                            <span>Edit Notes</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#text-from-pdf">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>PDF Extract</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#timer">
+                            <i class="fas fa-clock"></i>
+                            <span>Timer</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content-area">
+            <div class="content-wrapper">
+                <div ws-hole="Content"></div>
+            </div>
+        </main>
+    </div>
+
+    <div ws-children-template="HomePage">
+        <div class="page-header">
+            <div class="title-container">
+                <h1>My Notes</h1>
+                <p>All your thoughts in one place</p>
+            </div>
+            <button class="btn create-btn" ws-onclick="CreateNewNote">
+                <i class="fas fa-plus"></i>
+                <span>Create Note</span>
+            </button>
+        </div>
+        
+        <div class="search-container">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search notes..." />
+            </div>
+            <div class="filter-options">
+                <select>
+                    <option>All Notes</option>
+                    <option>Recent</option>
+                    <option>Favorites</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="notes-container" ws-hole="NotesContainer">
+            <div class="note-card" ws-template="NoteItem">
+                <div class="note-header">
+                    <span class="note-date">May 12, 2025</span>
+                    <i class="far fa-star"></i>
+                </div>
+                <div class="note-preview">${NotePreview}</div>
+                <div class="note-actions">
+                    <button class="btn edit-btn" ws-onclick="EditNote">
+                        <i class="fas fa-pencil-alt"></i>
+                        <span>Edit</span>
+                    </button>
+                    <button class="btn delete-btn" ws-onclick="DeleteNote">
+                        <i class="fas fa-trash"></i>
+                        <span>Delete</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div ws-children-template="CreatePage">
+        <div class="page-header">
+            <h1>Create New Note</h1>
+        </div>
+        <div class="form-container">
+            <div class="form-group">
+                <label for="note-title">Title</label>
+                <input type="text" id="note-title" placeholder="Enter note title...">
+            </div>
+            <div class="form-group">
+                <label for="note-content">Content</label>
+                <textarea id="note-content" placeholder="Start writing your note here..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button class="btn secondary-btn" ws-onclick="SwitchToHome">Cancel</button>
+                <button class="btn save-btn">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <div ws-children-template="EditPage">
+        <!-- Similar to CreatePage but with pre-filled values -->
+    </div>
+
+    <div ws-template="TextFromPdfPage">
+        <!-- PDF extraction UI -->
+    </div>
+
+    <div ws-template="TimerPage">
+        <!-- Timer UI -->
+    </div>
+    <script type="module" src="Scripts/FSHARP-project-omega.min.js"></script>
+</body>
+</html>
