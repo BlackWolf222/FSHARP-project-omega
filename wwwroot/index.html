@@ -111,7 +111,10 @@
 
     <div ws-children-template="CreatePage">
         <div class="page-header">
-            <h1>Create New Note</h1>
+            <div class="title-container">
+                <h1>Create New Note</h1>
+                <p>Add your thoughts, ideas, or important information</p>
+            </div>
         </div>
         <div class="form-container">
             <div class="form-group">
@@ -123,8 +126,14 @@
                 <textarea id="note-content" placeholder="Start writing your note here..."></textarea>
             </div>
             <div class="form-actions">
-                <button class="btn secondary-btn" ws-onclick="SwitchToHome">Cancel</button>
-                <button class="btn save-btn">Save Note</button>
+                <button class="btn secondary-btn" ws-onclick="SwitchToHome">
+                    <i class="fas fa-times"></i>
+                    <span>Cancel</span>
+                </button>
+                <button class="btn save-btn" ws-onclick="SaveNote" id="save-note-btn">
+                    <i class="fas fa-save"></i>
+                    <span>Save Note</span>
+                </button>
             </div>
         </div>
     </div>
