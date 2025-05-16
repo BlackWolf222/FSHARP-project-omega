@@ -94,7 +94,8 @@
                     <span class="note-date">May 12, 2025</span>
                     <i class="far fa-star"></i>
                 </div>
-                <div class="note-preview">${NotePreview}</div>
+                <h3 class="note-title">${NoteTitle}</h3>
+                <div class="note-preview">${NoteContent}</div>
                 <div class="note-actions">
                     <button class="btn edit-btn" ws-onclick="EditNote">
                         <i class="fas fa-pencil-alt"></i>
@@ -147,7 +148,36 @@
     </div>
 
     <div ws-template="TimerPage">
-        <!-- Timer UI -->
+        <div class="page-header">
+            <div class="title-container">
+                <h1>Timer</h1>
+                <p>Stay focused and track your time</p>
+            </div>
+        </div>
+        <div class="timer-container">
+            <div class="timer-display">
+                <span ws-hole="TimerDisplay">25:00</span>
+            </div>
+            <div class="timer-progress">
+                <div ws-hole="TimerProgressBar" class="progress-bar"></div>
+            </div>
+            <div class="timer-controls">
+                <button class="btn timer-btn start-btn" ws-hole="StartButton">
+                    <i class="fas fa-play"></i>
+                    <span>Start</span>
+                </button>
+                <button class="btn timer-btn reset-btn" ws-onclick="ResetTimer">
+                    <i class="fas fa-undo"></i>
+                    <span>Reset</span>
+                </button>
+            </div>
+            <div class="timer-settings">
+                <div class="timer-duration-controls">
+                    <button class="btn duration-btn" ws-onclick="DecreaseTime">-</button>
+                    <button class="btn duration-btn" ws-onclick="IncreaseTime">+</button>
+                </div>
+            </div>
+        </div>
     </div>
     <script type="module" src="Scripts/FSHARP-project-omega.min.js"></script>
 </body>
