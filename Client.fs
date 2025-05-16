@@ -138,7 +138,7 @@ module Client =
                     IndexTemplate.NoteItem()
                         .NoteTitle(note.Title)
                         .NoteContent(
-                            if note.Content.Length > 100 then 
+                            if note.Content.Length > 300 then 
                                 note.Content.Substring(0, 100) + "..." 
                             else 
                                 note.Content)
@@ -156,9 +156,61 @@ module Client =
             let titleVar = Var.Create ""
             let contentVar = Var.Create ""
             
+            let initRichTextEditor() =
+        // JavaScript function to initialize the rich text editor
+                let editorToolbar = JS.Document.QuerySelectorAll(".editor-toolbar .toolbar-btn")
+                let editorButtons = [| for i in 0 .. editorToolbar.Length - 1 -> editorToolbar.[i] :?> HTMLElement |]
+        
+                // Add event listeners to toolbar buttons
+                for btn in editorButtons do
+                    btn.AddEventListener("click", fun (e: Dom.Event) ->
+                        // Find the command attribute
+                        let target = e.Target :?> HTMLElement
+                        let button = 
+                            if target.TagName.ToLower() = "i" then 
+                                target.ParentElement :?> HTMLElement 
+                            else 
+                                target
+                        
+                        let command = button.GetAttribute("data-command")
+                        
+                        // Execute command using modern approach
+                        try
+                            // Apply formatting to current selection
+                            match command with
+                            | "bold" -> JS.Document.ExecCommand("bold", false, null) |> ignore
+                            | "italic" -> JS.Document.ExecCommand("italic", false, null) |> ignore
+                            | "underline" -> JS.Document.ExecCommand("underline", false, null) |> ignore
+                            | "createLink" -> 
+                                let url = JS.Window.Prompt("Enter URL:", "https://")
+                                if not (isNull url) && url <> "" then
+                                    JS.Document.ExecCommand("createLink", false, url) |> ignore
+                            | "insertImage" ->
+                                let url = JS.Window.Prompt("Enter image URL:", "https://")
+                                if not (isNull url) && url <> "" then
+                                    JS.Document.ExecCommand("insertImage", false, url) |> ignore
+                            | _ -> 
+                                // For other commands, still use execCommand with @nowarn
+                            
+                                JS.Document.ExecCommand(command, false, null) |> ignore
+                        with _ ->
+                            Console.Log("Command execution failed: " + command)
+                        
+                        // Focus back to editor
+                        let editor = JS.Document.GetElementById("note-content")
+                        (editor :?> HTMLElement).Focus()
+                        
+                        // Prevent default behavior
+                        e.PreventDefault()
+                    )
+        
+                Console.Log("Rich text editor initialized")
+
             let saveNote () =
                 let title = titleVar.Value
-                let content = contentVar.Value
+                let contentElement = JS.Document.GetElementById("note-content")
+                let content = contentElement.InnerHTML
+                
                 if not (String.IsNullOrWhiteSpace(title) || String.IsNullOrWhiteSpace(content)) then
                     let newNote = {
                         Id = NextId.Value
@@ -177,6 +229,7 @@ module Client =
                     // Reset form fields
                     titleVar.Value <- ""
                     contentVar.Value <- ""
+                    contentElement.InnerHTML <- ""
                     
                     // Navigate back to home page
                     currentPage.Value <- Home
@@ -194,11 +247,12 @@ module Client =
                 .Doc()
         
         let CreatePage() =
-            IndexTemplate.CreatePage()
-                .SaveNote(fun _ ->
+            let doc = IndexTemplate.CreatePage()
+    
+            doc.SaveNote(fun _ ->
                     // Get current values from DOM
                     let title = (JS.Document.GetElementById("note-title") :?> HTMLInputElement).Value
-                    let content = (JS.Document.GetElementById("note-content") :?> HTMLTextAreaElement).Value
+                    let content = JS.Document.GetElementById("note-content").InnerHTML
                     
                     // Update the vars
                     Create.titleVar.Value <- title
@@ -206,6 +260,7 @@ module Client =
                     
                     // Call save function
                     Create.saveNote()
+                    Create.initRichTextEditor()
                 )
                 .Doc()
         let EditPage() =

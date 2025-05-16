@@ -232,12 +232,16 @@ body {
 .note-preview {
     flex: 1;
     overflow: hidden;
-    text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 5;
     -webkit-box-orient: vertical;
     color: var(--text-light);
     font-size: 0.95rem;
+}
+
+.note-preview ul,
+.note-preview ol {
+    padding-left: 1.5rem;
 }
 
 .note-actions {
@@ -405,8 +409,6 @@ body {
     }
 }
 
-/* ...existing code... */
-
 /* Timer styles */
 .timer-container {
     background-color: var(--card-color);
@@ -518,4 +520,79 @@ body {
     color: var(--text-light);
 }
 
-/* ...existing code... */
+/* Rich Text Editor */
+.rich-text-editor {
+    border: 1px solid #e0e0e0;
+    border-radius: var(--border-radius);
+    background-color: #fff;
+    overflow: hidden;
+}
+
+.editor-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #f5f5f5;
+}
+
+.toolbar-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color);
+    transition: var(--transition);
+}
+
+.toolbar-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.toolbar-btn.active {
+    background-color: var(--primary-light);
+    color: white;
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background-color: #e0e0e0;
+    margin: 0 0.5rem;
+}
+
+.editor-content {
+    min-height: 200px;
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 1rem;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.editor-content:focus {
+    outline: none;
+}
+
+/* Style for when content is empty */
+.editor-content:empty:before {
+    content: 'Start writing your note here...';
+    color: #aaa;
+}
+
+/* Lists inside editor */
+.editor-content ul, 
+.editor-content ol {
+    padding-left: 1.5rem;
+}
+
+.editor-content ul li, 
+.editor-content ol li {
+    margin-bottom: 0.5rem;
+}
