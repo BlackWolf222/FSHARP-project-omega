@@ -34,18 +34,6 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#edit">
-                            <i class="fas fa-edit"></i>
-                            <span>Edit Notes</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#text-from-pdf">
-                            <i class="fas fa-file-pdf"></i>
-                            <span>PDF Extract</span>
-                        </a>
-                    </li>
-                    <li>
                         <a href="#timer">
                             <i class="fas fa-clock"></i>
                             <span>Timer</span>
@@ -97,9 +85,9 @@
                 <h3 class="note-title">${NoteTitle}</h3>
                 <div class="note-preview">${NoteContent}</div>
                 <div class="note-actions">
-                    <button class="btn edit-btn" ws-onclick="EditNote">
-                        <i class="fas fa-pencil-alt"></i>
-                        <span>Edit</span>
+                    <button class="btn edit-btn" ws-onclick="OpenNote">
+                        <i class="fas fa-folder-open"></i>
+                        <span>Open</span>
                     </button>
                     <button class="btn delete-btn" ws-onclick="DeleteNote">
                         <i class="fas fa-trash"></i>
@@ -168,14 +156,6 @@
                 </button>
             </div>
         </div>
-    </div>
-
-    <div ws-children-template="EditPage">
-        <!-- Similar to CreatePage but with pre-filled values -->
-    </div>
-
-    <div ws-template="TextFromPdfPage">
-        <!-- PDF extraction UI -->
     </div>
 
     <div ws-template="TimerPage">

@@ -8,27 +8,33 @@ open WebSharper.UI.Templating
 open WebSharper.UI.Html
 open WebSharper.Sitelets
 open System
-open WebSharper.JavaScript.Dom
 
 
 [<JavaScript>]
-module Client =
-
+module Client =    
     type EndPoint =
         | [<EndPoint "/">] Home
         | [<EndPoint "/create">] Create
-        | [<EndPoint "/edit">] Edit // Note: For specific item editing, consider /edit/{id}
-        | [<EndPoint "/text-from-pdf">] TextFromPdf
+        | [<EndPoint "/open/{Id}">] Open of Id: int
         | [<EndPoint "/timer">] Timer
     
     type IndexTemplate = Template<"wwwroot/index.html", ClientLoad.FromDocument>
 
+    type Tag = {
+        Id: int
+        Title: string
+        Color: string
+    }
+
+    let Tags = ListModel.Create (fun tag -> tag.Id) []
+    let NextTagId = Var.Create 1
+
     type Note = {
         Id: int
         Title: string
-        Content: string // For actual rich text, this would need a different rendering approach
+        Content: string
         Subject: string
-        Tags: list<string>
+        Tags: list<Tag>
     }
 
     let Notes = ListModel.Create (fun note -> note.Id) []
@@ -40,131 +46,136 @@ module Client =
     type Router<'T when 'T: equality> with
         member this.LinkHash (ep: 'T) = "#" + this.Link ep
 
-    module Timer =
-        let mutable private timerIntervalId : option<WebSharper.JavaScript.JS.Handle> = None
-        let mutable private startTime : float = 0.0
-        let mutable private remainingSeconds : float = 25.0 * 60.0 // Default to 25 minutes
-        let mutable private totalSeconds : float = 25.0 * 60.0
-        let mutable private isRunning : bool = false
-        
-        let timerMinutesVar = Var.Create 25
-        let timerDisplayVar = Var.Create "25:00"
-        let progressVar = Var.Create 100.0
-        let isRunningVar = Var.Create false
-
-        // Create audio element for alert sound
-        let alertSound = JS.Document.CreateElement("audio") :?> HTMLAudioElement
-        do
-            alertSound.Src <- "https://assets.coderrocketfuel.com/pomodoro-times-up.mp3"
-            alertSound.Load()
-
-        let formatTime (seconds: float) =
-            let mins = Math.Floor(seconds / 60.0)
-            let secs = Math.Floor(seconds % 60.0)
-            sprintf "%d:%02d" (int mins) (int secs)
-            
-        let updateDisplay() =
-            timerDisplayVar.Value <- formatTime remainingSeconds
-            progressVar.Value <- remainingSeconds / totalSeconds * 100.0
-
-        let stopTimer() =
-            match timerIntervalId with
-            | Some id ->
-                JS.ClearInterval(id)
-                timerIntervalId <- None
-            | None -> ()
-                
-            isRunning <- false
-            isRunningVar.Value <- false
-            
-        let playAlert() =
-            alertSound.CurrentTime <- 0.0
-            let _ = alertSound.Play()
-            JS.Alert("Timer completed!")
-
-        let startTimer() =
-            if not isRunning then
-                isRunning <- true
-                isRunningVar.Value <- true
-                startTime <- Date.Now()
-                
-                // If timer was previously stopped and at 0, reset it
-                if remainingSeconds <= 0.0 then
-                    let mins = timerMinutesVar.Value
-                    remainingSeconds <- float mins * 60.0
-                    totalSeconds <- remainingSeconds
-                    updateDisplay()
-                
-                let callback() =
-                    let now = Date.Now()
-                    let elapsed = (float(now) - startTime) / 1000.0
-                    startTime <- now
-                    
-                    remainingSeconds <- max 0.0 (remainingSeconds - elapsed)
-                    updateDisplay()
-                    
-                    if remainingSeconds <= 0.0 then
-                        stopTimer()
-                        playAlert()
-                
-                timerIntervalId <- Some((JS.SetInterval callback) 1000)
-
-        let resetTimer() =
-            stopTimer()
-            let mins = timerMinutesVar.Value
-            remainingSeconds <- float mins * 60.0
-            totalSeconds <- remainingSeconds
-            updateDisplay()
-            
-        let toggleTimer() =
-            if isRunning then stopTimer() else startTimer()
-            
-        let setMinutes(mins: int) =
-            let validMins = max 1 (min 120 mins)
-            timerMinutesVar.Value <- validMins
-            
-            // Only update remaining time if timer is not running
-            if not isRunning then
-                remainingSeconds <- float validMins * 60.0
-                totalSeconds <- remainingSeconds
-                updateDisplay()
+    
 
     module Pages =
         open WebSharper.UI.Html
 
         module Home =
+            let htmlToPlainText (html: string) =
+                let tempDiv = JS.Document.CreateElement("div")
+                tempDiv.InnerHTML <- html
+                
+                let plainText = tempDiv.TextContent
+                
+                if isNull plainText then "" else plainText
+
             let renderNotes () =
                 Notes.View.DocSeqCached(fun note ->
                     IndexTemplate.NoteItem()
                         .NoteTitle(note.Title)
                         .NoteContent(
-                            if note.Content.Length > 300 then 
-                                note.Content.Substring(0, 100) + "..." 
+                            let plainTextContent = htmlToPlainText note.Content
+                            if plainTextContent.Length > 300 then 
+                                plainTextContent.Substring(0, 100) + "..." 
                             else 
-                                note.Content)
-                        .EditNote(fun _ -> 
-                            // Navigation for edit will be implemented later
-                            Console.Log("Edit note: " + string note.Id))
+                                plainTextContent)
+                        .OpenNote(fun _ -> 
+                            currentPage.Value <- Open note.Id)
                         .DeleteNote(fun _ -> 
                             Notes.Remove(note))
                         .Doc()
                 )
 
-        
+        module Timer =
+            let mutable private timerIntervalId : option<WebSharper.JavaScript.JS.Handle> = None
+            let mutable private startTime : float = 0.0
+            let mutable private remainingSeconds : float = 25.0 * 60.0 // Default to 25 minutes
+            let mutable private totalSeconds : float = 25.0 * 60.0
+            let mutable private isRunning : bool = false
+            
+            let timerMinutesVar = Var.Create 25
+            let timerDisplayVar = Var.Create "25:00"
+            let progressVar = Var.Create 100.0
+            let isRunningVar = Var.Create false
+
+            // Create audio element for alert sound
+            let alertSound = JS.Document.CreateElement("audio") :?> HTMLAudioElement
+            do
+                alertSound.Src <- "https://assets.coderrocketfuel.com/pomodoro-times-up.mp3"
+                alertSound.Load()
+
+            let formatTime (seconds: float) =
+                let mins = Math.Floor(seconds / 60.0)
+                let secs = Math.Floor(seconds % 60.0)
+                sprintf "%d:%02d" (int mins) (int secs)
+                
+            let updateDisplay() =
+                timerDisplayVar.Value <- formatTime remainingSeconds
+                progressVar.Value <- remainingSeconds / totalSeconds * 100.0
+
+            let stopTimer() =
+                match timerIntervalId with
+                | Some id ->
+                    JS.ClearInterval(id)
+                    timerIntervalId <- None
+                | None -> ()
+                    
+                isRunning <- false
+                isRunningVar.Value <- false
+                
+            let playAlert() =
+                alertSound.CurrentTime <- 0.0
+                let _ = alertSound.Play()
+                JS.Alert("Timer completed!")
+
+            let startTimer() =
+                if not isRunning then
+                    isRunning <- true
+                    isRunningVar.Value <- true
+                    startTime <- Date.Now()
+                    
+                    // If timer was previously stopped and at 0, reset it
+                    if remainingSeconds <= 0.0 then
+                        let mins = timerMinutesVar.Value
+                        remainingSeconds <- float mins * 60.0
+                        totalSeconds <- remainingSeconds
+                        updateDisplay()
+                    
+                    let callback() =
+                        let now = Date.Now()
+                        let elapsed = (float(now) - startTime) / 1000.0
+                        startTime <- now
+                        
+                        remainingSeconds <- max 0.0 (remainingSeconds - elapsed)
+                        updateDisplay()
+                        
+                        if remainingSeconds <= 0.0 then
+                            stopTimer()
+                            playAlert()
+                    
+                    timerIntervalId <- Some((JS.SetInterval callback) 1000)
+
+            let resetTimer() =
+                stopTimer()
+                let mins = timerMinutesVar.Value
+                remainingSeconds <- float mins * 60.0
+                totalSeconds <- remainingSeconds
+                updateDisplay()
+                
+            let toggleTimer() =
+                if isRunning then stopTimer() else startTimer()
+                
+            let setMinutes(mins: int) =
+                let validMins = max 1 (min 120 mins)
+                timerMinutesVar.Value <- validMins
+                
+                // Only update remaining time if timer is not running
+                if not isRunning then
+                    remainingSeconds <- float validMins * 60.0
+                    totalSeconds <- remainingSeconds
+                    updateDisplay()
 
         module Create =
             let titleVar = Var.Create ""
             let contentVar = Var.Create ""
             
             let initRichTextEditor() =
-        // JavaScript function to initialize the rich text editor
                 let editorToolbar = JS.Document.QuerySelectorAll(".editor-toolbar .toolbar-btn")
                 let editorButtons = [| for i in 0 .. editorToolbar.Length - 1 -> editorToolbar.[i] :?> HTMLElement |]
         
-                // Add event listeners to toolbar buttons
                 for btn in editorButtons do
                     btn.AddEventListener("click", fun (e: Dom.Event) ->
-                        // Find the command attribute
                         let target = e.Target :?> HTMLElement
                         let button = 
                             if target.TagName.ToLower() = "i" then 
@@ -174,9 +185,7 @@ module Client =
                         
                         let command = button.GetAttribute("data-command")
                         
-                        // Execute command using modern approach
                         try
-                            // Apply formatting to current selection
                             match command with
                             | "bold" -> JS.Document.ExecCommand("bold", false, null) |> ignore
                             | "italic" -> JS.Document.ExecCommand("italic", false, null) |> ignore
@@ -190,17 +199,14 @@ module Client =
                                 if not (isNull url) && url <> "" then
                                     JS.Document.ExecCommand("insertImage", false, url) |> ignore
                             | _ -> 
-                                // For other commands, still use execCommand with @nowarn
-                            
                                 JS.Document.ExecCommand(command, false, null) |> ignore
+
                         with _ ->
                             Console.Log("Command execution failed: " + command)
                         
-                        // Focus back to editor
                         let editor = JS.Document.GetElementById("note-content")
                         (editor :?> HTMLElement).Focus()
                         
-                        // Prevent default behavior
                         e.PreventDefault()
                     )
         
@@ -216,22 +222,18 @@ module Client =
                         Id = NextId.Value
                         Title = title
                         Content = content
-                        Subject = "General" // Default subject, can be changed later
-                        Tags = [] // Tags can be added later
+                        Subject = "General"
+                        Tags = []
                     }
                     
-                    // Add the new note to our collection
                     Notes.Add(newNote)
                     
-                    // Increment the next ID
                     NextId.Value <- NextId.Value + 1
                     
-                    // Reset form fields
                     titleVar.Value <- ""
                     contentVar.Value <- ""
                     contentElement.InnerHTML <- ""
                     
-                    // Navigate back to home page
                     currentPage.Value <- Home
                     
                     JS.Alert("Note added successfully!")
@@ -239,37 +241,84 @@ module Client =
                     JS.Alert("Please fill out both title and content fields.")
 
         let HomePage() =
-            let doc = IndexTemplate.HomePage()
-            doc.NotesContainer(Home.renderNotes())
+            IndexTemplate.HomePage()
+                .NotesContainer(Home.renderNotes())
                 .CreateNewNote(fun _ -> 
-                    // Navigate to create page
                     currentPage.Value <- Create)
                 .Doc()
-        
         let CreatePage() =
             let doc = IndexTemplate.CreatePage()
+            
+            JS.Window.SetTimeout(fun () -> 
+                Create.initRichTextEditor()
+                Console.Log("Rich Text Editor initialized on page load")
+            , 100) |> ignore
     
             doc.SaveNote(fun _ ->
-                    // Get current values from DOM
-                    let title = (JS.Document.GetElementById("note-title") :?> HTMLInputElement).Value
-                    let content = JS.Document.GetElementById("note-content").InnerHTML
-                    
-                    // Update the vars
-                    Create.titleVar.Value <- title
-                    Create.contentVar.Value <- content
-                    
-                    // Call save function
-                    Create.saveNote()
+                let title = (JS.Document.GetElementById("note-title") :?> HTMLInputElement).Value
+                let content = JS.Document.GetElementById("note-content").InnerHTML
+                
+                Create.titleVar.Value <- title
+                Create.contentVar.Value <- content
+                
+                Create.saveNote()
+            )
+        let OpenPage(id: int) =
+            match Notes.TryFindByKey(id) with
+            | Some note ->
+                let doc = IndexTemplate.CreatePage()
+
+                // Change the page header to 'Edit Note' after DOM is ready
+                JS.Window.SetTimeout((fun () ->
+                    // Set the header title and subtitle
+                    let header = JS.Document.QuerySelector(".page-header .title-container h1")
+                    if not (isNull header) then header.TextContent <- "Edit Note"
+                    let subtitle = JS.Document.QuerySelector(".page-header .title-container p")
+                    if not (isNull subtitle) then subtitle.TextContent <- "View or update your note."
+
+                    // Initialize the rich text editor
                     Create.initRichTextEditor()
-                )
-                .Doc()
-        let EditPage() =
-            IndexTemplate.EditPage()
-                .Doc()
-        
-        let TextFromPdfPage() =
-            IndexTemplate.TextFromPdfPage()
-                .Doc()
+
+                    // Set form values
+                    let titleElement = JS.Document.GetElementById("note-title") :?> HTMLInputElement
+                    let contentElement = JS.Document.GetElementById("note-content")
+                    if not (isNull titleElement) then titleElement.Value <- note.Title
+                    if not (isNull contentElement) then contentElement.InnerHTML <- note.Content
+
+                    // Update the vars
+                    Create.titleVar.Value <- note.Title
+                    Create.contentVar.Value <- note.Content
+                ), 100) |> ignore
+
+                // Save handler for updating existing note
+                doc.SaveNote(fun _ ->
+                    let titleElement = JS.Document.GetElementById("note-title") :?> HTMLInputElement
+                    let contentElement = JS.Document.GetElementById("note-content")
+                    let title = if isNull titleElement then "" else titleElement.Value
+                    let content = if isNull contentElement then "" else contentElement.InnerHTML
+                    let updatedNote = {
+                        Id = note.Id
+                        Title = title
+                        Content = content
+                        Subject = note.Subject
+                        Tags = note.Tags
+                    }
+                    Notes.RemoveByKey(note.Id)
+                    Notes.Add(updatedNote)
+                    currentPage.Value <- Home
+                    JS.Alert("Note updated successfully!")
+                ) |> ignore
+
+                // Cancel handler
+                doc.SwitchToHome(fun _ ->
+                    currentPage.Value <- Home
+                ) |> ignore
+
+                doc
+            | None ->
+                JS.Alert("Note not found!")
+                currentPage.Value <- Home
+                IndexTemplate.CreatePage()
 
         let TimerPage() =
             // Create the start button
@@ -294,8 +343,8 @@ module Client =
                     // Update button style
                     btn.ClassName <- if isRunning then 
                                         "btn timer-btn start-btn pause" 
-                                        else 
-                                            "btn timer-btn start-btn"
+                                     else 
+                                        "btn timer-btn start-btn"
                 
                 // Set initial state
                 updateButtonState false
@@ -328,7 +377,7 @@ module Client =
             IndexTemplate.TimerPage()
                 .TimerDisplay(Timer.timerDisplayVar.View)
                 .StartButton(startButton)  // Pass the Doc element directly
-                .TimerProgressBar(progressBarDoc :> Doc)  // Explicitly cast to Doc
+                .TimerProgressBar(progressBarDoc)  // Removed unnecessary cast to Doc
                 .IncreaseTime(fun _ -> 
                     let newVal = min 120 (Timer.timerMinutesVar.Value + 1)
                     Timer.setMinutes(newVal)
@@ -340,17 +389,14 @@ module Client =
                 .ResetTimer(fun _ -> Timer.resetTimer())
                 .Doc()
             
-            
-    
-    [<SPAEntryPoint>]
+      [<SPAEntryPoint>]
     let Main () =
         let renderInnerPage (currentPage: Var<EndPoint>) =
             currentPage.View.Map (fun endpoint ->
                 match endpoint with
                 | Home        -> Pages.HomePage()
-                | Create      -> Pages.CreatePage()
-                | Edit        -> Pages.EditPage()
-                | TextFromPdf -> Pages.TextFromPdfPage()
+                | Create      -> Pages.CreatePage().Doc()
+                | Open id     -> Pages.OpenPage(id).Doc()
                 | Timer       -> Pages.TimerPage()
             )
             |> Doc.EmbedView
