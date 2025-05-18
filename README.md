@@ -1,7 +1,5 @@
 # SmartNotes - F# Project Omega
 
-![SmartNotes Logo](https://img.shields.io/badge/SmartNotes-F%23%20Project%20Omega-6c5ce7)
-
 ## Motivation
 
 SmartNotes was built to provide a clean, functional, and efficient note-taking application that leverages the power of F# and WebSharper for a rich web experience. The application aims to solve common note organization problems by offering a modern UI with features like tags, favorites, and search functionality, all wrapped in a responsive design.
