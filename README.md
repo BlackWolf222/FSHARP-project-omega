@@ -1,6 +1,7 @@
 # SmartNotes - F# Project Omega
 
-![SmartNotes Logo](https://img.shields.io/badge/SmartNotes-F%23%20Project%20Omega-6c5ce7)
+![image](https://github.com/user-attachments/assets/79b8f6ab-6908-4462-89cc-06e8aa6d1974)
+
 
 ## Motivation
 
@@ -111,10 +112,6 @@ FSHARP-project-omega/
 - **ESBuild (v0.19.9)**: JavaScript bundler
 - **ESlint (v9.26.0)**: JavaScript linter
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## Contributing
 
 Any contributions you make are **greatly appreciated**.
@@ -148,6 +145,12 @@ Any contributions you make are **greatly appreciated**.
 - Update documentation for any new features
 - Add appropriate tests for new functionality
 - Make sure all tests pass before submitting your changes
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
