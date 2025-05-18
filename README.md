@@ -1,5 +1,9 @@
 # SmartNotes - F# Project Omega
 
+Try-live link: [https://blackwolf222.github.io/FSHARP-project-omega](https://blackwolf222.github.io/FSHARP-project-omega/)
+
+Screenshot
+
 ![image](https://github.com/user-attachments/assets/79b8f6ab-6908-4462-89cc-06e8aa6d1974)
 
 
