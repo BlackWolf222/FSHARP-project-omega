@@ -103,7 +103,6 @@ module Client =
                     Tags.Add(newTag)
                     NextTagId.Value <- NextTagId.Value + 1
                     
-                    // Reset input fields
                     tagTitleVar.Value <- ""
                     JS.Alert("Tag created successfully!")
                 else
@@ -165,33 +164,32 @@ module Client =
 
             let formatDate (date: DateTime) =
                 let months = [|"Jan"; "Feb"; "Mar"; "Apr"; "May"; "Jun"; "Jul"; "Aug"; "Sep"; "Oct"; "Nov"; "Dec"|]
-                sprintf "%s %d, %d" months.[date.Month - 1] date.Day date.Year
-
+                sprintf "%s %d, %d" months.[date.Month - 1] date.Day date.Year            
+                
             let filterVar = Var.Create "All Notes"
             let searchTermVar = Var.Create ""
-
             let renderNotes () =
                 let filteredNotes = 
-                    Notes.View.Map(fun notes ->
+                    View.Map3 (fun (filter: string) (searchTerm: string) notes ->
                         let initialFiltered =
-                            match filterVar.Value with
+                            match filter with
                             | "Favorites" -> notes |> Seq.filter (fun n -> n.IsFavorite)
                             | "Recent" -> 
                                 notes 
                                 |> Seq.sortByDescending (fun n -> n.CreatedDate)
                                 |> Seq.truncate 5
                             | _ -> notes
-
-                        let searchTerm = searchTermVar.Value.Trim().ToLower()
-                        if String.IsNullOrWhiteSpace(searchTerm) then
+                        
+                        let trimmedSearch = searchTerm.Trim().ToLower()
+                        if String.IsNullOrWhiteSpace(trimmedSearch) then
                             initialFiltered
                         else
                             initialFiltered |> Seq.filter (fun n ->
                                 let title = n.Title.ToLower()
                                 let content = (htmlToPlainText n.Content).ToLower()
-                                title.Contains(searchTerm) || content.Contains(searchTerm)
+                                title.Contains(trimmedSearch) || content.Contains(trimmedSearch)
                             )
-                    )
+                    ) filterVar.View searchTermVar.View Notes.View
 
                 filteredNotes.DocSeqCached(fun note ->
                     IndexTemplate.NoteItem()
@@ -214,12 +212,12 @@ module Client =
                                             text tag.Title
                                         ]
                                 ]
-                        )                        // Ensure proper icon classes are used
+                        )
                         .FavoriteIcon(
                             if note.IsFavorite then
-                                "fas fa-star fa-lg"  // Filled star with larger size
+                                "fas fa-star fa-lg"
                             else
-                                "far fa-star fa-lg"  // Outline star with larger size
+                                "far fa-star fa-lg"
                         )
                         .ToggleFavorite(fun _ -> 
                             toggleNoteFavorite note.Id)
@@ -233,7 +231,7 @@ module Client =
         module Timer =
             let mutable private timerIntervalId : option<WebSharper.JavaScript.JS.Handle> = None
             let mutable private startTime : float = 0.0
-            let mutable private remainingSeconds : float = 25.0 * 60.0 // Default to 25 minutes
+            let mutable private remainingSeconds : float = 25.0 * 60.0
             let mutable private totalSeconds : float = 25.0 * 60.0
             let mutable private isRunning : bool = false
             
@@ -242,7 +240,6 @@ module Client =
             let progressVar = Var.Create 100.0
             let isRunningVar = Var.Create false
 
-            // Create audio element for alert sound
             let alertSound = JS.Document.CreateElement("audio") :?> HTMLAudioElement
             do
                 alertSound.Src <- "https://assets.coderrocketfuel.com/pomodoro-times-up.mp3"
@@ -278,7 +275,6 @@ module Client =
                     isRunningVar.Value <- true
                     startTime <- Date.Now()
                     
-                    // If timer was previously stopped and at 0, reset it
                     if remainingSeconds <= 0.0 then
                         let mins = timerMinutesVar.Value
                         remainingSeconds <- float mins * 60.0
@@ -313,7 +309,6 @@ module Client =
                 let validMins = max 1 (min 120 mins)
                 timerMinutesVar.Value <- validMins
                 
-                // Only update remaining time if timer is not running
                 if not isRunning then
                     remainingSeconds <- float validMins * 60.0
                     totalSeconds <- remainingSeconds
@@ -432,17 +427,18 @@ module Client =
 
         let HomePage() =
             IndexTemplate.HomePage()
-                .NotesContainer(Home.renderNotes())
+                .NotesContainer(Home.renderNotes())                
                 .FilterNotes(fun e ->
-                    let select = e.Target :?> HTMLElement
+                    let select = e.Target :?> HTMLSelectElement
                     let selectedValue = select.GetAttribute("value")
-                    // Handle null case
                     let value = if isNull selectedValue then "All Notes" else selectedValue
+                    Console.Log("Filter changed to:", value)
                     Home.filterVar.Value <- value
                 )
                 .CurrentFilter(Home.filterVar)
                 .SearchNotes(fun e ->
                     let input = e.Target :?> HTMLInputElement
+                    Console.Log("Search term entered:", input.Value)
                     Home.searchTermVar.Value <- input.Value
                 )
                 .SearchTerm(Home.searchTermVar)
@@ -466,8 +462,7 @@ module Client =
                 
                 Create.titleVar.Value <- title
                 Create.contentVar.Value <- content
-                
-
+    
                 Create.saveNote()
             )
             
@@ -479,29 +474,23 @@ module Client =
                 let noteTagIds = note.Tags |> List.map (fun tag -> tag.Id) |> Set.ofList
                 Create.selectedTagsVar.Value <- noteTagIds
 
-                // Change the page header to 'Edit Note' after DOM is ready
                 JS.Window.SetTimeout((fun () ->
-                    // Set the header title and subtitle
                     let header = JS.Document.QuerySelector(".page-header .title-container h1")
                     if not (isNull header) then header.TextContent <- "Edit Note"
                     let subtitle = JS.Document.QuerySelector(".page-header .title-container p")
                     if not (isNull subtitle) then subtitle.TextContent <- "View or update your note."
 
-                    // Initialize the rich text editor
                     Create.initRichTextEditor()
 
-                    // Set form values
                     let titleElement = JS.Document.GetElementById("note-title") :?> HTMLInputElement
                     let contentElement = JS.Document.GetElementById("note-content")
                     if not (isNull titleElement) then titleElement.Value <- note.Title
                     if not (isNull contentElement) then contentElement.InnerHTML <- note.Content
 
-                    // Update the vars
                     Create.titleVar.Value <- note.Title
                     Create.contentVar.Value <- note.Content
                 ), 100) |> ignore
 
-                // Save handler for updating existing note
                 doc.SelectableTags(Create.renderSelectableTags()) |> ignore
                 doc.SaveNote(fun _ ->
                     let titleElement = JS.Document.GetElementById("note-title") :?> HTMLInputElement
@@ -528,7 +517,6 @@ module Client =
                     JS.Alert("Note updated successfully!")
                 ) |> ignore
 
-                // Cancel handler
                 doc.SwitchToHome(fun _ ->
                     currentPage.Value <- Home
                 ) |> ignore
@@ -540,63 +528,50 @@ module Client =
                 IndexTemplate.CreatePage()
 
         let TimerPage() =
-            // Create the start button
             let startButton =
                 let btn = JS.Document.CreateElement("button")
                 btn.ClassName <- "btn timer-btn start-btn"
                 
-                // Handle the dynamic button appearance and behavior
                 let updateButtonState isRunning =
                     btn.InnerHTML <- ""
                     
-                    // Add icon
                     let icon = JS.Document.CreateElement("i")
                     icon.ClassName <- if isRunning then "fas fa-pause" else "fas fa-play"
                     btn.AppendChild(icon) |> ignore
                     
-                    // Add text
                     let span = JS.Document.CreateElement("span")
                     span.TextContent <- if isRunning then " Pause" else " Start"
                     btn.AppendChild(span) |> ignore
                     
-                    // Update button style
                     btn.ClassName <- if isRunning then 
                                         "btn timer-btn start-btn pause" 
                                      else 
                                         "btn timer-btn start-btn"
                 
-                // Set initial state
                 updateButtonState false
                 
-                // Add click handler
                 btn.AddEventListener("click", fun (e: Dom.Event) -> 
                     Timer.toggleTimer()
                 )
                 
-                // Update button on timer state changes
                 View.Sink updateButtonState Timer.isRunningVar.View |> ignore
                 
-                // Convert DOM element to Doc for template binding
                 Doc.Static btn
             
-            // Create a reactive string view for the progress width
             let progressWidthView = 
                 Timer.progressVar.View
                 |> View.Map (fun percent -> string percent + "%")
                 
-            // Create the progress bar as Doc element directly
             let progressBarDoc = 
                 div [attr.``class`` "progress-bar"
                      Attr.DynamicStyle "width" progressWidthView] []
 
-            // Initialize timer
             Timer.resetTimer()
 
-            // Bind the template with proper Doc elements
             IndexTemplate.TimerPage()
                 .TimerDisplay(Timer.timerDisplayVar.View)
-                .StartButton(startButton)  // Pass the Doc element directly
-                .TimerProgressBar(progressBarDoc)  // Removed unnecessary cast to Doc
+                .StartButton(startButton)  
+                .TimerProgressBar(progressBarDoc)  
                 .IncreaseTime(fun _ -> 
                     let newVal = min 120 (Timer.timerMinutesVar.Value + 1)
                     Timer.setMinutes(newVal)
