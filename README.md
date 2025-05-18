@@ -1,9 +1,12 @@
 # SmartNotes - F# Project Omega
 
-Try-live link: [https://blackwolf222.github.io/FSHARP-project-omega](https://blackwolf222.github.io/FSHARP-project-omega/)
+**Project Omega**
+SmartNotes is an intelligent note-taking and search application designed specifically for students. Built with F# and leveraging the WebSharper SPA framework, this system allows users to create, organize, and search notes efficiently using advanced text analysis techniques. With features like rich text editing, subject-based organization, and spaced repetition reminders, SmartNotes combines knowledge management and learning support into one streamlined platform.
 
-Screenshot
+**Try-live link:**
+[https://blackwolf222.github.io/FSHARP-project-omega](https://blackwolf222.github.io/FSHARP-project-omega/)
 
+**Screenshot**
 ![image](https://github.com/user-attachments/assets/79b8f6ab-6908-4462-89cc-06e8aa6d1974)
 
 
