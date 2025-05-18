@@ -34,7 +34,6 @@ jobs:
 
       - name: Reinstall Node.js dependencies
         run: |
-          cd Project_alpha
           rm -rf node_modules # Remove existing node_modules
           npm ci # Reinstall dependencies for the current platform
 
