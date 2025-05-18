@@ -109,10 +109,6 @@ FSHARP-project-omega/
 - **ESBuild (v0.19.9)**: JavaScript bundler
 - **ESlint (v9.26.0)**: JavaScript linter
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## Contributing
 
 Any contributions you make are **greatly appreciated**.
@@ -146,6 +142,12 @@ Any contributions you make are **greatly appreciated**.
 - Update documentation for any new features
 - Add appropriate tests for new functionality
 - Make sure all tests pass before submitting your changes
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
