@@ -17,6 +17,7 @@ module Client =
         | [<EndPoint "/create">] Create
         | [<EndPoint "/open/{Id}">] Open of Id: int
         | [<EndPoint "/timer">] Timer
+        | [<EndPoint "/tags">] TagsPage
     
     type IndexTemplate = Template<"wwwroot/index.html", ClientLoad.FromDocument>
 
@@ -35,10 +36,23 @@ module Client =
         Content: string
         Subject: string
         Tags: list<Tag>
-    }
-
+        CreatedDate: DateTime
+        IsFavorite: bool
+    }    
     let Notes = ListModel.Create (fun note -> note.Id) []
     let NextId = Var.Create 1
+    
+    // Add a sample note for testing
+    do 
+        Notes.Add({
+            Id = 0
+            Title = "Sample Note"
+            Content = "This is a sample note to test the favorite functionality."
+            Subject = "Test"
+            Tags = []
+            CreatedDate = DateTime.Now
+            IsFavorite = false
+        })
 
     let router = Router.Infer<EndPoint>()
     let currentPage = Router.InstallHash Home router
@@ -46,10 +60,99 @@ module Client =
     type Router<'T when 'T: equality> with
         member this.LinkHash (ep: 'T) = "#" + this.Link ep
 
-    
-
     module Pages =
-        open WebSharper.UI.Html
+        open WebSharper.UI.Html        
+        let toggleNoteFavorite (noteId: int) =
+            Console.Log("Toggle favorite for note:", noteId)
+            match Notes.TryFindByKey(noteId) with
+            | Some note ->
+                let updatedNote = { note with IsFavorite = not note.IsFavorite }
+                Notes.RemoveByKey(note.Id)
+                Notes.Add(updatedNote)
+                Console.Log("Note favorite toggled. New state:", updatedNote.IsFavorite)
+                JS.Alert(sprintf "Note %s %s" note.Title (if updatedNote.IsFavorite then "marked as favorite" else "removed from favorites"))
+            | None -> 
+                Console.Log("Note not found with ID:", noteId)
+
+        module TagsManager =
+            let tagTitleVar = Var.Create ""
+            let tagColorVar = Var.Create "#6c5ce7"
+
+            let colorOptions = [
+                "#6c5ce7", "Purple"
+                "#00cec9", "Teal" 
+                "#fd79a8", "Pink"
+                "#e17055", "Orange"
+                "#00b894", "Green"
+                "#0984e3", "Blue"
+                "#636e72", "Gray"
+                "#2d3436", "Dark"
+            ]
+
+            let addNewTag() =
+                let title = tagTitleVar.Value.Trim()
+                let color = tagColorVar.Value
+                
+                if not (String.IsNullOrWhiteSpace(title)) then
+                    let newTag = {
+                        Id = NextTagId.Value
+                        Title = title
+                        Color = color
+                    }
+                    
+                    Tags.Add(newTag)
+                    NextTagId.Value <- NextTagId.Value + 1
+                    
+                    // Reset input fields
+                    tagTitleVar.Value <- ""
+                    JS.Alert("Tag created successfully!")
+                else
+                    JS.Alert("Please enter a tag name.")
+
+            let deleteTag tagId =
+                Tags.RemoveByKey(tagId)
+
+            let renderTags() =
+                Tags.View.DocSeqCached(fun tag ->
+                    div [attr.``class`` "tag-item"] [
+                        div [attr.``class`` "color-preview"; 
+                             Attr.Style "background-color" tag.Color; 
+                             Attr.Style "width" "20px"; 
+                             Attr.Style "height" "20px"; 
+                             Attr.Style "border-radius" "50%"] []
+                        span [attr.``class`` "tag-name"] [text tag.Title]
+                        button [attr.``class`` "tag-delete-btn"; 
+                                attr.``type`` "button";
+                                on.click (fun _ _ -> deleteTag tag.Id)] [
+                            i [attr.``class`` "fas fa-times"] []
+                        ]
+                    ]
+                )
+
+            let TagsPage() =
+                IndexTemplate.TagsPage()
+                    .TagName(tagTitleVar : Var<string>)
+                    .TagColor(tagColorVar : Var<string>)
+                    .TagsList(renderTags())
+                    .ColorOptions(
+                        Doc.Concat [
+                            for color, name in colorOptions ->
+                                let id = "color-" + name.ToLower()
+                                label [attr.``class`` "color-option";
+                                        attr.``for`` id] [
+                                    input [attr.``type`` "radio";
+                                        attr.``id`` id;
+                                        attr.name "tag-color";
+                                        attr.value color;
+                                        on.change (fun _ _ -> tagColorVar.Value <- color)] []
+                                    span [attr.``class`` "color-preview";
+                                        Attr.Style "background-color" color] []
+                                    text name
+                                ]
+                        ]
+                    )
+                    .CreateTag(fun _ -> addNewTag())
+                    .Doc()
 
         module Home =
             let htmlToPlainText (html: string) =
@@ -60,16 +163,66 @@ module Client =
                 
                 if isNull plainText then "" else plainText
 
+            let formatDate (date: DateTime) =
+                let months = [|"Jan"; "Feb"; "Mar"; "Apr"; "May"; "Jun"; "Jul"; "Aug"; "Sep"; "Oct"; "Nov"; "Dec"|]
+                sprintf "%s %d, %d" months.[date.Month - 1] date.Day date.Year
+
+            let filterVar = Var.Create "All Notes"
+            let searchTermVar = Var.Create ""
+
             let renderNotes () =
-                Notes.View.DocSeqCached(fun note ->
+                let filteredNotes = 
+                    Notes.View.Map(fun notes ->
+                        let initialFiltered =
+                            match filterVar.Value with
+                            | "Favorites" -> notes |> Seq.filter (fun n -> n.IsFavorite)
+                            | "Recent" -> 
+                                notes 
+                                |> Seq.sortByDescending (fun n -> n.CreatedDate)
+                                |> Seq.truncate 5
+                            | _ -> notes
+
+                        let searchTerm = searchTermVar.Value.Trim().ToLower()
+                        if String.IsNullOrWhiteSpace(searchTerm) then
+                            initialFiltered
+                        else
+                            initialFiltered |> Seq.filter (fun n ->
+                                let title = n.Title.ToLower()
+                                let content = (htmlToPlainText n.Content).ToLower()
+                                title.Contains(searchTerm) || content.Contains(searchTerm)
+                            )
+                    )
+
+                filteredNotes.DocSeqCached(fun note ->
                     IndexTemplate.NoteItem()
                         .NoteTitle(note.Title)
+                        .NoteDate(formatDate note.CreatedDate)
                         .NoteContent(
                             let plainTextContent = htmlToPlainText note.Content
                             if plainTextContent.Length > 300 then 
                                 plainTextContent.Substring(0, 100) + "..." 
                             else 
                                 plainTextContent)
+                        .NoteTags(
+                            if note.Tags.IsEmpty then
+                                Doc.Empty
+                            else
+                                Doc.Concat [
+                                    for tag in note.Tags ->
+                                        span [attr.``class`` "note-tag"
+                                              Attr.Style "background-color" tag.Color] [
+                                            text tag.Title
+                                        ]
+                                ]
+                        )                        // Ensure proper icon classes are used
+                        .FavoriteIcon(
+                            if note.IsFavorite then
+                                "fas fa-star fa-lg"  // Filled star with larger size
+                            else
+                                "far fa-star fa-lg"  // Outline star with larger size
+                        )
+                        .ToggleFavorite(fun _ -> 
+                            toggleNoteFavorite note.Id)
                         .OpenNote(fun _ -> 
                             currentPage.Value <- Open note.Id)
                         .DeleteNote(fun _ -> 
@@ -169,7 +322,35 @@ module Client =
         module Create =
             let titleVar = Var.Create ""
             let contentVar = Var.Create ""
-            
+            let selectedTagsVar = Var.Create (Set.empty<int>)
+            let toggleTag tagId =
+                let currentTags = selectedTagsVar.Value
+                let newTags =
+                    if Set.contains tagId currentTags then
+                        Set.remove tagId currentTags
+                    else
+                        Set.add tagId currentTags
+                selectedTagsVar.Value <- newTags
+
+            let renderSelectableTags() =
+                Tags.View.DocSeqCached(fun (tag: Tag) ->
+                    let isSelected = 
+                        selectedTagsVar.View 
+                        |> View.Map (fun selectedIds -> Set.contains tag.Id selectedIds)
+                    
+                    div [attr.``class`` "selectable-tag"
+                         Attr.DynamicClassPred "selected" isSelected
+                         Attr.DynamicStyle "background-color" (
+                            isSelected |> View.Map (fun selected ->
+                                if selected then tag.Color else "transparent"))
+                         Attr.DynamicStyle "color" (
+                            isSelected |> View.Map (fun selected ->
+                                if selected then "white" else "inherit"))  
+                         on.click (fun _ _ -> toggleTag tag.Id)] [
+                        text tag.Title
+                    ]
+                )
+
             let initRichTextEditor() =
                 let editorToolbar = JS.Document.QuerySelectorAll(".editor-toolbar .toolbar-btn")
                 let editorButtons = [| for i in 0 .. editorToolbar.Length - 1 -> editorToolbar.[i] :?> HTMLElement |]
@@ -218,12 +399,20 @@ module Client =
                 let content = contentElement.InnerHTML
                 
                 if not (String.IsNullOrWhiteSpace(title) || String.IsNullOrWhiteSpace(content)) then
+                    let selectedTags = 
+                        selectedTagsVar.Value
+                        |> Set.toList
+                        |> List.choose (fun tagId -> Tags.TryFindByKey tagId)
+                    
+                    
                     let newNote = {
                         Id = NextId.Value
                         Title = title
                         Content = content
                         Subject = "General"
-                        Tags = []
+                        Tags = selectedTags
+                        CreatedDate = DateTime.Now
+                        IsFavorite = false
                     }
                     
                     Notes.Add(newNote)
@@ -232,6 +421,7 @@ module Client =
                     
                     titleVar.Value <- ""
                     contentVar.Value <- ""
+                    selectedTagsVar.Value <- Set.empty
                     contentElement.InnerHTML <- ""
                     
                     currentPage.Value <- Home
@@ -243,17 +433,33 @@ module Client =
         let HomePage() =
             IndexTemplate.HomePage()
                 .NotesContainer(Home.renderNotes())
+                .FilterNotes(fun e ->
+                    let select = e.Target :?> HTMLElement
+                    let selectedValue = select.GetAttribute("value")
+                    // Handle null case
+                    let value = if isNull selectedValue then "All Notes" else selectedValue
+                    Home.filterVar.Value <- value
+                )
+                .CurrentFilter(Home.filterVar)
+                .SearchNotes(fun e ->
+                    let input = e.Target :?> HTMLInputElement
+                    Home.searchTermVar.Value <- input.Value
+                )
+                .SearchTerm(Home.searchTermVar)
                 .CreateNewNote(fun _ -> 
                     currentPage.Value <- Create)
                 .Doc()
         let CreatePage() =
             let doc = IndexTemplate.CreatePage()
+
+            Create.selectedTagsVar.Value <- Set.empty
             
             JS.Window.SetTimeout(fun () -> 
                 Create.initRichTextEditor()
                 Console.Log("Rich Text Editor initialized on page load")
             , 100) |> ignore
     
+            doc.SelectableTags(Create.renderSelectableTags()) |> ignore
             doc.SaveNote(fun _ ->
                 let title = (JS.Document.GetElementById("note-title") :?> HTMLInputElement).Value
                 let content = JS.Document.GetElementById("note-content").InnerHTML
@@ -261,12 +467,17 @@ module Client =
                 Create.titleVar.Value <- title
                 Create.contentVar.Value <- content
                 
+
                 Create.saveNote()
             )
+            
         let OpenPage(id: int) =
             match Notes.TryFindByKey(id) with
             | Some note ->
                 let doc = IndexTemplate.CreatePage()
+
+                let noteTagIds = note.Tags |> List.map (fun tag -> tag.Id) |> Set.ofList
+                Create.selectedTagsVar.Value <- noteTagIds
 
                 // Change the page header to 'Edit Note' after DOM is ready
                 JS.Window.SetTimeout((fun () ->
@@ -291,17 +502,25 @@ module Client =
                 ), 100) |> ignore
 
                 // Save handler for updating existing note
+                doc.SelectableTags(Create.renderSelectableTags()) |> ignore
                 doc.SaveNote(fun _ ->
                     let titleElement = JS.Document.GetElementById("note-title") :?> HTMLInputElement
                     let contentElement = JS.Document.GetElementById("note-content")
                     let title = if isNull titleElement then "" else titleElement.Value
                     let content = if isNull contentElement then "" else contentElement.InnerHTML
+                    let selectedTags = 
+                            Create.selectedTagsVar.Value
+                            |> Set.toList
+                            |> List.choose (fun tagId -> Tags.TryFindByKey tagId)
+                    
                     let updatedNote = {
                         Id = note.Id
                         Title = title
                         Content = content
                         Subject = note.Subject
-                        Tags = note.Tags
+                        Tags = selectedTags
+                        CreatedDate = note.CreatedDate
+                        IsFavorite = note.IsFavorite
                     }
                     Notes.RemoveByKey(note.Id)
                     Notes.Add(updatedNote)
@@ -398,6 +617,7 @@ module Client =
                 | Create      -> Pages.CreatePage().Doc()
                 | Open id     -> Pages.OpenPage(id).Doc()
                 | Timer       -> Pages.TimerPage()
+                | TagsPage    -> Pages.TagsManager.TagsPage()
             )
             |> Doc.EmbedView
 

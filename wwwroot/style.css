@@ -200,19 +200,54 @@ body {
 }
 
 .note-date {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: var(--text-light);
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+.note-date::before {
+    content: "\f133"; /* Font Awesome calendar icon */
+    font-family: "Font Awesome 6 Free";
+    margin-right: 5px;
+    font-weight: 400;
 }
 
 .note-header i {
-    color: #e2e2e2;
-    cursor: pointer;
-    transition: var(--transition);
-    font-size: 1.25rem;
+    font-size: 1.2rem !important;
+    margin-left: auto !important;
+    cursor: pointer !important;
+    color: #d3d3d3 !important; /* Lighter color for better visibility */
+    transition: all 0.2s ease !important;
 }
 
-.note-header i:hover {
-    color: #fdcb6e;
+.favorite-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    margin-left: auto;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.note-header i:hover,
+.favorite-btn i:hover {
+    transform: scale(1.2);
+    color: #ffc107 !important;
+}
+
+.note-header i.fas.fa-star,
+.favorite-btn i.fas.fa-star {
+    color: #ffc107 !important;  /* Golden yellow for favorites */
+    text-shadow: 0 0 3px rgba(255, 193, 7, 0.3);
+}
+
+@keyframes favorite-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1.1); }
 }
 
 .note-title {
@@ -226,10 +261,11 @@ body {
     flex: 1;
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 5;
+    -webkit-line-clamp: 3;  /* Reduce from 5 to 3 to make room for tags */
     -webkit-box-orient: vertical;
     color: var(--text-light);
     font-size: 0.95rem;
+    margin-bottom: 0.75rem;
 }
 
 .note-preview ul,
@@ -600,4 +636,173 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+.color-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.color-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.color-option:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.color-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.color-option input[type="radio"]:checked + .color-preview {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--primary-color);
+    transform: scale(1.1);
+}
+
+.color-preview {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.tags-section {
+    margin-top: 2.5rem;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 1.5rem;
+}
+
+.tags-section h3 {
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+
+.tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.tag-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--card-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+.tag-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.tag-delete-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 0.875rem;
+    padding: 0.25rem;
+    transition: var(--transition);
+}
+
+.tag-delete-btn:hover {
+    color: var(--danger-color);
+}
+
+.tag-selection {
+    margin-top: 1rem;
+}
+
+.tag-selection-title {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.selectable-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.selectable-tag {
+    display: flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.selectable-tag.selected {
+    color: white;
+}
+.selectable-tag:not(.selected) {
+    opacity: 0.7;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.selectable-tag:not(.selected):hover {
+    opacity: 0.9;
+}
+
+.no-tags-message {
+    color: var(--text-light);
+    font-style: italic;
+    padding: 0.75rem;
+    background-color: rgba(0, 0, 0, 0.03);
+    border-radius: var(--border-radius);
+}
+
+.create-tags-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.create-tags-link:hover {
+    text-decoration: underline;
+}
+
+.note-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.note-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: var(--transition);
+}
+
+.note-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
 }

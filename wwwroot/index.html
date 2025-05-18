@@ -19,7 +19,7 @@
         <aside class="sidebar">
             <div class="logo">
                 <i class="fas fa-book-open"></i>
-                <h2>NoteKeeper</h2>
+                <h2>SmartNotes</h2>
             </div>
             <nav class="main-nav">
                 <ul>
@@ -39,6 +39,11 @@
                             <span>Timer</span>
                         </a>
                     </li>
+                    <li>
+                        <a href="#tags">
+                            <i class="fas fa-tags"></i>
+                            <span>Manage Tags</span>
+                        </a>
                 </ul>
             </nav>
         </aside>
@@ -65,10 +70,10 @@
         <div class="search-container">
             <div class="search-bar">
                 <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search notes..." />
+                <input type="text" placeholder="Search notes..." ws-var="SearchTerm" ws-onkeyup="SearchNotes" />
             </div>
             <div class="filter-options">
-                <select>
+                <select ws-onchange="FilterNotes" ws-var="CurrentFilter">
                     <option>All Notes</option>
                     <option>Recent</option>
                     <option>Favorites</option>
@@ -77,13 +82,16 @@
         </div>
         
         <div class="notes-container" ws-hole="NotesContainer">
-            <div class="note-card" ws-template="NoteItem">
-                <div class="note-header">
-                    <span class="note-date">May 12, 2025</span>
-                    <i class="far fa-star"></i>
+            <div class="note-card" ws-template="NoteItem">                
+                <div class="note-header">                    
+                    <span class="note-date">${NoteDate}</span>
+                    <button ws-onclick="ToggleFavorite" class="favorite-btn">
+                        <i class="${FavoriteIcon}"></i>
+                    </button>
                 </div>
                 <h3 class="note-title">${NoteTitle}</h3>
                 <div class="note-preview">${NoteContent}</div>
+                <div class="note-tags" ws-hole="NoteTags"></div>
                 <div class="note-actions">
                     <button class="btn edit-btn" ws-onclick="OpenNote">
                         <i class="fas fa-folder-open"></i>
@@ -145,6 +153,14 @@
                     <input type="hidden" id="note-content-html">
                 </div>
             </div>
+            <div class="form-group">
+                <label>Tags</label>
+                <div class="tag-selection">
+                    <div class="selectable-tags" ws-hole="SelectableTags">
+                        <!-- Tags will be rendered here -->
+                    </div>
+                </div>
+            </div>
             <div class="form-actions">
                 <button class="btn secondary-btn" ws-onclick="SwitchToHome">
                     <i class="fas fa-times"></i>
@@ -190,6 +206,40 @@
             </div>
         </div>
     </div>
+
+    <div ws-template="TagsPage">
+        <div class="page-header">
+            <div class="title-container">
+                <h1>Manage Tags</h1>
+                <p>Create and organize tags for your notes</p>
+            </div>
+        </div>
+        <div class="form-container">
+            <div class="form-group">
+                <label for="tag-name">Tag Name</label>
+                <input type="text" id="tag-name" ws-var="TagName" placeholder="Enter tag name...">
+            </div>
+            <div class="form-group">
+                <label>Tag Color</label>
+                <div class="color-options" ws-hole="ColorOptions">
+                    <!-- Color options will be inserted here -->
+                </div>
+                <input type="hidden" ws-var="TagColor">
+            </div>
+            <div class="form-actions">
+                <button class="btn save-btn" ws-onclick="CreateTag">
+                    <i class="fas fa-plus"></i>
+                    <span>Create Tag</span>
+                </button>
+            </div>
+            
+            <div class="tags-section">
+                <h3>Your Tags</h3>
+                <div class="tags-list" ws-hole="TagsList">
+                    <!-- Tags will be rendered here -->
+                </div>
+            </div>
+        </div>
     <script type="module" src="Scripts/FSHARP-project-omega.min.js"></script>
 </body>
 </html>
