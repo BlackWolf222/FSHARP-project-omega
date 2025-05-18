@@ -1,0 +1,245 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>FSHARP_project_omega</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <link rel="stylesheet" type="text/css" href="Scripts/FSHARP-project-omega.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Don't show the not-yet-loaded templates */
+        [ws-template], [ws-children-template] { display: none; }
+    </style>
+    <script type="text/javascript" src="Scripts/FSHARP-project-omega.head.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-book-open"></i>
+                <h2>SmartNotes</h2>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li class="active" ws-onclick="SwitchToHome">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </li>
+                    <li>
+                        <a href="#create">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>New Note</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#timer">
+                            <i class="fas fa-clock"></i>
+                            <span>Timer</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#tags">
+                            <i class="fas fa-tags"></i>
+                            <span>Manage Tags</span>
+                        </a>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content-area">
+            <div class="content-wrapper">
+                <div ws-hole="Content"></div>
+            </div>
+        </main>
+    </div>
+
+    <div ws-children-template="HomePage">
+        <div class="page-header">
+            <div class="title-container">
+                <h1>My Notes</h1>
+                <p>All your thoughts in one place</p>
+            </div>
+            <button class="btn create-btn" ws-onclick="CreateNewNote">
+                <i class="fas fa-plus"></i>
+                <span>Create Note</span>
+            </button>
+        </div>
+        
+        <div class="search-container">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search notes..." ws-var="SearchTerm" ws-onkeyup="SearchNotes" />
+            </div>
+            <div class="filter-options">                
+                <select ws-onchange="FilterNotes" ws-var="CurrentFilter">
+                    <option value="All Notes">All Notes</option>
+                    <option value="Recent">Recent</option>
+                    <option value="Favorites">Favorites</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="notes-container" ws-hole="NotesContainer">
+            <div class="note-card" ws-template="NoteItem">                
+                <div class="note-header">                    
+                    <span class="note-date">${NoteDate}</span>
+                    <button ws-onclick="ToggleFavorite" class="favorite-btn">
+                        <i class="${FavoriteIcon}"></i>
+                    </button>
+                </div>
+                <h3 class="note-title">${NoteTitle}</h3>
+                <div class="note-preview">${NoteContent}</div>
+                <div class="note-tags" ws-hole="NoteTags"></div>
+                <div class="note-actions">
+                    <button class="btn edit-btn" ws-onclick="OpenNote">
+                        <i class="fas fa-folder-open"></i>
+                        <span>Open</span>
+                    </button>
+                    <button class="btn delete-btn" ws-onclick="DeleteNote">
+                        <i class="fas fa-trash"></i>
+                        <span>Delete</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div ws-children-template="CreatePage">
+        <div class="page-header">
+            <div class="title-container">
+                <h1>Create New Note</h1>
+                <p>Add your thoughts, ideas, or important information</p>
+            </div>
+        </div>
+        <div class="form-container">
+            <div class="form-group">
+                <label for="note-title">Title</label>
+                <input type="text" id="note-title" placeholder="Enter note title...">
+            </div>
+            <div class="form-group">
+                <label for="note-content">Content</label>
+                <div class="rich-text-editor">
+                    <div class="editor-toolbar">
+                        <button type="button" class="toolbar-btn" data-command="bold" title="Bold">
+                            <i class="fas fa-bold"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" data-command="italic" title="Italic">
+                            <i class="fas fa-italic"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" data-command="underline" title="Underline">
+                            <i class="fas fa-underline"></i>
+                        </button>
+                        <span class="toolbar-divider"></span>
+                        <button type="button" class="toolbar-btn" data-command="insertUnorderedList" title="Bullet List">
+                            <i class="fas fa-list-ul"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" data-command="insertOrderedList" title="Numbered List">
+                            <i class="fas fa-list-ol"></i>
+                        </button>
+                        <span class="toolbar-divider"></span>
+                        <button type="button" class="toolbar-btn" data-command="justifyLeft" title="Align Left">
+                            <i class="fas fa-align-left"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" data-command="justifyCenter" title="Align Center">
+                            <i class="fas fa-align-center"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" data-command="justifyRight" title="Align Right">
+                            <i class="fas fa-align-right"></i>
+                        </button>
+                    </div>
+                    <div id="note-content" class="editor-content" contenteditable="true"></div>
+                    <input type="hidden" id="note-content-html">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Tags</label>
+                <div class="tag-selection">
+                    <div class="selectable-tags" ws-hole="SelectableTags">
+                        <!-- Tags will be rendered here -->
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn secondary-btn" ws-onclick="SwitchToHome">
+                    <i class="fas fa-times"></i>
+                    <span>Cancel</span>
+                </button>
+                <button class="btn save-btn" ws-onclick="SaveNote" id="save-note-btn">
+                    <i class="fas fa-save"></i>
+                    <span>Save Note</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div ws-template="TimerPage">
+        <div class="page-header">
+            <div class="title-container">
+                <h1>Timer</h1>
+                <p>Stay focused and track your time</p>
+            </div>
+        </div>
+        <div class="timer-container">
+            <div class="timer-display">
+                <span ws-hole="TimerDisplay">25:00</span>
+            </div>
+            <div class="timer-progress">
+                <div ws-hole="TimerProgressBar" class="progress-bar"></div>
+            </div>
+            <div class="timer-controls">
+                <button class="btn timer-btn start-btn" ws-hole="StartButton">
+                    <i class="fas fa-play"></i>
+                    <span>Start</span>
+                </button>
+                <button class="btn timer-btn reset-btn" ws-onclick="ResetTimer">
+                    <i class="fas fa-undo"></i>
+                    <span>Reset</span>
+                </button>
+            </div>
+            <div class="timer-settings">
+                <div class="timer-duration-controls">
+                    <button class="btn duration-btn" ws-onclick="DecreaseTime">-</button>
+                    <button class="btn duration-btn" ws-onclick="IncreaseTime">+</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div ws-template="TagsPage">
+        <div class="page-header">
+            <div class="title-container">
+                <h1>Manage Tags</h1>
+                <p>Create and organize tags for your notes</p>
+            </div>
+        </div>
+        <div class="form-container">
+            <div class="form-group">
+                <label for="tag-name">Tag Name</label>
+                <input type="text" id="tag-name" ws-var="TagName" placeholder="Enter tag name...">
+            </div>
+            <div class="form-group">
+                <label>Tag Color</label>
+                <div class="color-options" ws-hole="ColorOptions">
+                    <!-- Color options will be inserted here -->
+                </div>
+                <input type="hidden" ws-var="TagColor">
+            </div>
+            <div class="form-actions">
+                <button class="btn save-btn" ws-onclick="CreateTag">
+                    <i class="fas fa-plus"></i>
+                    <span>Create Tag</span>
+                </button>
+            </div>
+            
+            <div class="tags-section">
+                <h3>Your Tags</h3>
+                <div class="tags-list" ws-hole="TagsList">
+                    <!-- Tags will be rendered here -->
+                </div>
+            </div>
+        </div>
+    <script type="module" src="Scripts/FSHARP-project-omega.min.js"></script>
+</body>
+</html>
